@@ -1,0 +1,32 @@
+{
+  "name": "aws-cwlogs",
+  "version": "0.0.0",
+  "description": "",
+  "main": "cwlogs.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/giowe/aws-cwlogs.git"
+  },
+  "keywords": [
+    "aws",
+    "cloudwatch",
+    "logs",
+    "realtime",
+    "pooling",
+    "console"
+  ],
+  "author": "Giovanni Bruno",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/giowe/aws-cwlogs/issues"
+  },
+  "homepage": "https://github.com/giowe/aws-cwlogs#readme",
+  "dependencies": {
+    "aws-sdk": "^2.6.12",
+    "cli-color": "^1.1.0",
+    "moment": "^2.15.2"
+  }
+}
