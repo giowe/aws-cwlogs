@@ -12,15 +12,17 @@ missing params.
 
 cwlogs [logGroupName] [region] [options]
 
---timeformat\t-t\t\tmomentjs time format
---interval\t-i\t\tinterval between every log refresh
---logformat\t-f\t\twhile watching logs generated from lambda functions the output is more readable if this options is set to "lambda"
+--timeformat\t-t\t\tmomentjs time format;
+--interval\t-i\t\tinterval between every log request;
+--logformat\t-f\t\twhile watching logs generated from lambda functions the output is more readable if this options is set to "lambda";
 `);
 
-CwLogs.start({
+const cwlogs = new CwLogs({
   logGroupName: logGroupName,
   region: region,
   momentTimeFormat: argv.timeformat || argv.t || 'hh:mm:ss:SSS',
   interval: argv.interval || argv.i || 2000,
   logFormat: argv.logformat || argv.f || 'standard'
 });
+
+cwlogs.start();

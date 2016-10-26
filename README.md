@@ -10,14 +10,54 @@
 
 
 ## Installation
+You can install aws-cwlog both locally
 ```
 npm install aws-cwlogs
 ```
-of
 
+or globally
 ```
 npm install aws-cwlogs -g
 ```
 
-## Usage
-todo
+## Configuration
+To use the aws-cwlogs it's important that you have properly installed the [aws-cli](http://docs.aws.amazon.com/cli/latest/userguide/installing.html) and
+configured it with your credentials.
+
+## Local Usage
+If you installed aws-cwlogs locally you can simply use it like shown in the example:
+```
+  const CwLogs = require('aws-cwlogs');
+
+  const options = {
+    logGroupName: '/aws/lambda/test-lambda',
+    region: 'eu-west-1'
+    momentTimeFormat: 'hh:mm:ss:SSS',
+    format: 'lambda',
+    interval: 2000
+  };
+
+  const lambdaLogger = new CwLogs(options);
+  lambdaLogger.start(options);
+```
+If you want to stop aws-cwlogs from pulling the new data from the specified log group you can simply use the stop command:
+```
+lambdaLogger.stop();
+```
+
+## Options
+* `logGroupName`: **required** the name of Aws CloudWatch log group;
+* `region`: **required** the Aws region of the log group;
+* `momentTimeFormat`:  [moment.js](http://momentjs.com/docs/#/displaying/format/) time format for every log timestamp;
+* `format`: while watching logs generated from lambda functions the output is more readable if this options is set to "lambda";
+* `interval`: interval between every log request to Aws CloudWatch;
+
+## Global Usage
+If you installed aws-cwlogs globally you can execute cwlogs command on your terminal following this syntax:
+```
+cwlogs [logGroupName] [region] [options]
+```
+*Options*:
+* `--timeformat -t`
+* `--interval   -i`
+* `--logformat  -f`

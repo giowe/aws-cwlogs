@@ -4,9 +4,7 @@ const AWS    = require('aws-sdk');
 const clc    = require('cli-color');
 const moment = require('moment');
 
-let _lastLogTime = 0;
-let _interval;
-let _options = {
+const _options = {
   logGroupName: '',
   region: '',
   momentTimeFormat: 'hh:mm:ss:SSS',
@@ -15,48 +13,51 @@ let _options = {
 };
 
 module.exports = class CwLogs {
-  static start(options) {
-    _options = Object.assign({}, _options, options);
-    const cloudwatchlogs = new AWS.CloudWatchLogs( {region: _options.region} );
+  constructor(options) {
+    this.options = Object.assign({}, _options, options);
+    this.lastLogTime = 0;
+    return this;
+  };
 
-    _interval = setInterval(() => {
+  start(){
+    const cloudwatchlogs = new AWS.CloudWatchLogs( {region: this.options.region} );
+    this.interval = setInterval(() => {
       const params = {
-        logGroupName: _options.logGroupName,
+        logGroupName: this.options.logGroupName,
         descending: true,
         limit: 1,
         orderBy: 'LastEventTime'
       };
 
-      cloudwatchlogs.describeLogStreams(params, function(err, data) {
+      cloudwatchlogs.describeLogStreams(params, (err, data) => {
         if (err) return console.log(clc.red(err));
         const params = {
-          logGroupName: _options.logGroupName,
+          logGroupName: this.options.logGroupName,
           logStreamName: data.logStreams[0].logStreamName,
-          startTime: _lastLogTime
+          startTime: this.lastLogTime
         };
 
-        cloudwatchlogs.getLogEvents(params, function(err, data) {
+        cloudwatchlogs.getLogEvents(params, (err, data) => {
           if (err) return console.log(clc.red(err));
           const events = data.events;
           if (!events.length) return;
-          _lastLogTime = events[events.length - 1].timestamp + 1;
+          this.lastLogTime = events[events.length - 1].timestamp + 1;
           const l = events.length;
-          for (let i = 0; i < l; i++) logEvent(events[i]);
+          for (let i = 0; i < l; i++) _logEvent(events[i], this.options);
         });
       });
-    }, _options.interval);
-
+    }, this.options.interval);
   }
 
-  static stop(){
+  stop(){
     clearInterval(_interval);
   }
 };
 
-function logEvent(event) {
-  const timestamp = `[ ${clc.blackBright(moment(event.timestamp).format(_options.momentTimeFormat))} ]`;
+function _logEvent(event, options) {
+  const timestamp = `[ ${clc.blackBright(moment(event.timestamp).format(options.momentTimeFormat))} ]`;
 
-  switch (_options.logFormat.toLowerCase()) {
+  switch (options.logFormat.toLowerCase()) {
     case 'lambda': {
       const splitted  = event.message.split('\t');
       const header    = splitted.shift().split(' ');
