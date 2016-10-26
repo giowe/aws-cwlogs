@@ -7,7 +7,7 @@
 	<a href="https://www.youtube.com/watch?v=Sagg08DrO5U"><img src='http://img.shields.io/badge/gandalf-approved-61C6FF.svg'></a>
 </div>
 
-
+This module logs in your terminal the latest events from the specified log group of Aws CloudWatch and keep pulling logs while running.
 
 ## Installation
 You can install aws-cwlog both locally
@@ -50,6 +50,7 @@ lambdaLogger.stop();
 * `region`: **required** the Aws region of the log group;
 * `momentTimeFormat`:  [moment.js](http://momentjs.com/docs/#/displaying/format/) time format for every log timestamp;
 * `format`: while watching logs generated from lambda functions the output is more readable if this options is set to "lambda";
+You can also pass a `function(timestamp, message, event))` if you want to customize the format of your log.
 * `interval`: interval between every log request to Aws CloudWatch;
 
 ## Global Usage

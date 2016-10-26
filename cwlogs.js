@@ -3,6 +3,7 @@
 const AWS    = require('aws-sdk');
 const clc    = require('cli-color');
 const moment = require('moment');
+const path   = require('path');
 
 const _options = {
   logGroupName: '',
@@ -41,9 +42,23 @@ module.exports = class CwLogs {
           if (err) return console.log(clc.red(err));
           const events = data.events;
           if (!events.length) return;
+
+          let logFunction = (message, timestamp) => console.log(timestamp, message);
+          if (this.options.logFormat) {
+            try {
+              logFunction = require(path.join(__dirname, 'log-formats', `${this.options.logFormat}.js`));
+            } catch(err) {}
+          }
+
           this.lastLogTime = events[events.length - 1].timestamp + 1;
           const l = events.length;
-          for (let i = 0; i < l; i++) _logEvent(events[i], this.options);
+          for (let i = 0; i < l; i++) {
+            const event = events[i];
+            const message = event.message;
+            const timestamp = `[ ${clc.blackBright(moment(event.timestamp).format(this.options.momentTimeFormat))} ]`;
+            logFunction(message, timestamp, event);
+          }
+
         });
       });
     }, this.options.interval);
@@ -53,54 +68,3 @@ module.exports = class CwLogs {
     clearInterval(_interval);
   }
 };
-
-function _logEvent(event, options) {
-  const timestamp = `[ ${clc.blackBright(moment(event.timestamp).format(options.momentTimeFormat))} ]`;
-
-  switch (options.logFormat.toLowerCase()) {
-    case 'lambda': {
-      const splitted  = event.message.split('\t');
-      const header    = splitted.shift().split(' ');
-      const message   = splitted.join(' ').slice(0, -1);
-      let out;
-      switch (header[0].toUpperCase()){
-        case 'START':
-          out = [
-            '┌──────────────────────',
-            timestamp,
-            ` ${clc.green(header[0])}`,
-            message,
-            '\n│'
-          ];
-          break;
-        case 'END':
-          out = [
-            '│',
-            '\n└──────────────────────',
-            timestamp,
-            ` ${clc.magenta(header[0])}`,
-            message
-          ];
-          break;
-        case 'REPORT':
-          out = [
-            `${clc.yellow(header[0])} `,
-            message,
-            '\n'
-          ];
-          break;
-        default:
-          out = [
-            '│ ',
-            timestamp,
-            message
-          ];
-      }
-
-      console.log(out.join(''));
-      break;
-    }
-    default:
-      console.log(timestamp, event.message, '\n');
-  }
-}
