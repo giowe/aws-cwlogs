@@ -10,7 +10,8 @@ let _options = {
   logGroupName: '',
   region: '',
   momentTimeFormat: 'hh:mm:ss:SSS',
-  interval: 2000
+  interval: 2000,
+  logFormat: 'standard'
 };
 
 module.exports = class CwLogs {
@@ -54,43 +55,51 @@ module.exports = class CwLogs {
 
 function logEvent(event) {
   const timestamp = `[ ${clc.blackBright(moment(event.timestamp).format(_options.momentTimeFormat))} ]`;
-  const splitted  = event.message.split('\t');
-  const header    = splitted.shift().split(' ');
-  const message   = splitted.join(' ').slice(0, -1);
-  let out;
-  switch (header[0].toUpperCase()){
-    case 'START':
-      out = [
-        '┌──────────────────────',
-        timestamp,
-        ` ${clc.green(header[0])}`,
-        message,
-        '\n│'
-      ];
-      break;
-    case 'END':
-      out = [
-        '│',
-        '\n└──────────────────────',
-        timestamp,
-        ` ${clc.magenta(header[0])}`,
-        message
-      ];
-      break;
-    case 'REPORT':
-      out = [
-        `${clc.yellow(header[0])} `,
-        message,
-        '\n'
-      ];
-      break;
-    default:
-      out = [
-        '│ ',
-        timestamp,
-        message
-      ];
-  }
 
-  console.log(out.join(''));
+  switch (_options.logFormat.toLowerCase()) {
+    case 'lambda': {
+      const splitted  = event.message.split('\t');
+      const header    = splitted.shift().split(' ');
+      const message   = splitted.join(' ').slice(0, -1);
+      let out;
+      switch (header[0].toUpperCase()){
+        case 'START':
+          out = [
+            '┌──────────────────────',
+            timestamp,
+            ` ${clc.green(header[0])}`,
+            message,
+            '\n│'
+          ];
+          break;
+        case 'END':
+          out = [
+            '│',
+            '\n└──────────────────────',
+            timestamp,
+            ` ${clc.magenta(header[0])}`,
+            message
+          ];
+          break;
+        case 'REPORT':
+          out = [
+            `${clc.yellow(header[0])} `,
+            message,
+            '\n'
+          ];
+          break;
+        default:
+          out = [
+            '│ ',
+            timestamp,
+            message
+          ];
+      }
+
+      console.log(out.join(''));
+      break;
+    }
+    default:
+      console.log(timestamp, event.message, '\n');
+  }
 }
