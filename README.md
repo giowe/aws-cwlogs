@@ -33,7 +33,7 @@ If you installed aws-cwlogs locally you can simply use it like shown in the exam
     logGroupName: '/aws/lambda/test-lambda',
     region: 'eu-west-1'
     momentTimeFormat: 'hh:mm:ss:SSS',
-    format: 'lambda',
+    logFormat: 'lambda',
     interval: 2000
   };
 
@@ -49,7 +49,7 @@ lambdaLogger.stop();
 * `logGroupName`: **required** the name of AWS CloudWatch Logs log group;
 * `region`: **required** the AWS region of the log group;
 * `momentTimeFormat`: [moment.js](http://momentjs.com/docs/#/displaying/format/) time format for every log timestamp;
-* `format`: while watching logs generated from AWS Lambda the output is more readable if this options is set to "lambda"; You can also pass a `function(timestamp, message, event))` if you want to customize the format of your logs.
+* `logFormat`: while watching logs generated from AWS Lambda the output is more readable if this options is set to "lambda"; You can also pass a `function(timestamp, message, event))` if you want to customize the format of your logs.
 * `interval`: the interval between every log request to AWS CloudWatch Logs;
 
 ## Global Usage
