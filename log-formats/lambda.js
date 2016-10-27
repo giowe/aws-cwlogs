@@ -37,6 +37,8 @@ module.exports = (message, timestamp, event) => {
       out = [
         '│ ',
         timestamp,
+        ' '
+        ,
         body
       ];
   }
