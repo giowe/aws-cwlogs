@@ -31,7 +31,7 @@ If you installed aws-cwlogs locally you can simply use it like shown in the exam
 
   const options = {
     logGroupName: '/aws/lambda/test-lambda',
-    region: 'eu-west-1'
+    region: 'eu-west-1',
     momentTimeFormat: 'hh:mm:ss:SSS',
     logFormat: 'lambda',
     interval: 2000
