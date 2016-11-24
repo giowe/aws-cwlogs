@@ -34,7 +34,7 @@ module.exports = class CwLogs {
         if (err) return console.log(clc.red(err));
         const params = {
           logGroupName: this.options.logGroupName,
-          logStreamName: data.logStreams[0].logStreamName,
+          logStreamName: this.options.logStreamName || data.logStreams[0].logStreamName,
           startTime: this.lastLogTime
         };
 
