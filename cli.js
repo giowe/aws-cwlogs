@@ -26,8 +26,7 @@ const saveConfig = (config, cb) => {
 };
 
 const getMacroName = (logGroupName, region, logStreamName) => {
-  logStreamName = logStreamName || '-last-';
-  return `${logGroupName} \t ${region} \t ${logStreamName}`;
+  return `${logGroupName} \t ${region}${logStreamName? ' \t ' + logStreamName : ''}`;
 };
 
 const commands = {
@@ -45,14 +44,44 @@ const commands = {
     ]).then(answers => { commands.startLogging(config.macros[answers.macroName]) } );
   },
 
-  help: () => {
-    console.log([
-      'cwlogs [logGroupName] [region] [options]',
-      '--timeformat\t-t\t\tmomentjs time format;',
-      '--interval\t-i\t\tinterval between every log request;',
-      '--logformat\t-f\t\twhile watching logs generated from lambda functions the output is more readable if this options is set to "lambda";',
-      '--streamname\t-n\t\tif not specified logs will be printed from the last stream name found;'
-    ].join('\n'));
+  help: (command) => {
+    const params = [
+      '  --streamname\t-n\tif not specified logs will be printed from the last stream name found;',
+      '  --timeformat\t-t\tmomentjs time format;',
+      '  --interval\t-i\tinterval between every log request;',
+      '  --logformat\t-f\tlogs generated from lambda functions are more readable setting this options to "lambda";'
+    ].join('\n');
+
+    const commands = {
+      startLogging: [
+        `${clc.cyan('cwlogs [logGroupName] [region] [options]')} - ${clc.magenta('logs data from the specified log group')}`,
+        params
+      ].join('\n'),
+
+      list: [
+        `${clc.cyan('cwlogs')} - ${clc.magenta('show a list of previously recorded cwlogs macros and logs data from the selected one')}`,
+      ].join('\n'),
+
+      add: [
+        `${clc.cyan('cwlogs add [logGroupName] [region] [options]')} - ${clc.magenta('add the specified parameters to the macro list')}`,
+        params,
+      ].join('\n'),
+
+      removeList: [
+        `${clc.cyan('cwlogs remove')} - ${clc.magenta('remove the selected macro from the list')}`,
+      ].join('\n'),
+
+      remove: [
+        `${clc.cyan('cwlogs remove [logGroupName] [region] [options]')} - ${clc.magenta('remove the specified macro from the list')}`,
+        params,
+      ].join('\n'),
+    };
+
+    const commandInfo = commands[command];
+    if (commandInfo) return console.log(commandInfo);
+
+    console.log('cwlogs commands:\n');
+    Object.keys(commands).forEach( key => console.log(commands[key], '\n') );
   },
 
   add: (options) => {
@@ -62,8 +91,10 @@ const commands = {
     const region = options.region || argv._[2];
     const logStreamName = options.logStreamName || argv.streamname || argv.n;
 
-    //todo: more detailed help
-    if (!logGroupName || !region) return console.log('missing params');
+    if (!logGroupName || !region) {
+      console.log(clc.red('missing params'), '\n');
+      return commands.help('add');
+    }
 
     const macroName = options.macroName || getMacroName(logGroupName, region, logStreamName);
 
@@ -130,8 +161,8 @@ const commands = {
     const region = options.region || argv._[1];
 
     if (!logGroupName || !region) {
-      console.log('missing params\n');
-      return commands.help();
+      console.log(clc.red('missing params)'), '\n');
+      return commands.help('startLogging');
     }
 
     const cwlogs = new CwLogs({
@@ -147,7 +178,12 @@ const commands = {
   }
 };
 
+if (argv.help) return commands.help(process.argv[2]);
 
+if (argv.version || argv.v) {
+  const pkg = require(path.join(__dirname, 'package.json'));
+  return console.log(pkg.name, pkg.version);
+}
 if (!argv._[0]) return commands.list();
 
 const command = commands[argv._[0]];
