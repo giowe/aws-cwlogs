@@ -74,7 +74,7 @@ If you installed aws-cwlogs globally you can use this commands:
 
 * `cwlogs remove` - removes the selected macro from the list
 
-* `cwlogs remove` [logGroupName] [region] [options] - removes the specified macro from the list
+* `cwlogs remove [logGroupName] [region] [options]` - removes the specified macro from the list
   * `--streamname -n` - logs will be printed from the last stream name found unless specified;
   * `--timeformat -t` - momentjs time format;
   * `--logformat -f` - logs generated from AWS Lambda are more readable if you set this option to "lambda";
