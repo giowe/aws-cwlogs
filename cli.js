@@ -42,7 +42,7 @@ function _saveConfig (config, dontSync, cb) {
 
     if (dontSync || !_hasS3Origin(config)) return cb(null, `${clc.green('Successfully')} saved`);
 
-    _sync(config, (err) => {
+    _saveRemoteConfig(config, (err) => {
       if (err) return cb(err);
       cb(null, `${clc.green('Successfully')} synced`);
     });
