@@ -6,42 +6,126 @@ const CwLogs = require('./cwlogs');
 const clc    = require('cli-color');
 const path   = require('path');
 const fs     = require('fs');
+const AWS    = require('aws-sdk');
 
-const configPath = path.join(__dirname, 'config.json');
-const loadConfig = () => {
+let _s3Conainer = {};
+function _s3 (region) {
+  if (!_s3Conainer[region]) _s3Conainer[region] = new AWS.S3({region: region});
+  return _s3Conainer[region];
+}
+
+function _hasS3Origin (config) {
+  const s3Origin = config.s3Origin;
+  return s3Origin.bucket && s3Origin.region && s3Origin.key;
+}
+
+const _configPath = path.join(__dirname, 'config.json');
+function _loadConfig() {
   try {
-    return require(configPath);
+    return require(_configPath);
   } catch(e) {
     return {
-      macros: {}
+      macros: {},
+      s3Origin: {}
     };
   }
-};
+}
 
-const saveConfig = (config, cb) => {
-  fs.writeFile(configPath, JSON.stringify(config, null, 2), (err) => {
+function _saveConfig (config, dontSync, cb) {
+  if (typeof cb === 'undefined'){
+    cb = dontSync;
+    dontSync = false;
+  }
+
+  fs.writeFile(_configPath, JSON.stringify(config, null, 2), (err) => {
+    if (err) return cb(err);
+
+    if (dontSync || !_hasS3Origin(config)) return cb(null, `${clc.green('Successfully')} saved`);
+
+    _sync(config, (err) => {
+      if (err) return cb(err);
+      cb(null, `${clc.green('Successfully')} synced`);
+    });
+  });
+}
+
+function _loadRemoteConfig (config, cb) {
+  const s3Origin = config.s3Origin;
+
+  const params = {
+    Bucket: s3Origin.bucket,
+    Key: s3Origin.key
+  };
+  _s3(s3Origin.region).getObject(params, (err, data) => {
+    if (err) return cb (err);
+    try {
+      cb(null, JSON.parse(data.Body));
+    } catch (err) {
+      cb(err);
+    }
+  });
+}
+
+function _saveRemoteConfig(config, cb) {
+  const s3Origin = config.s3Origin;
+
+  const params = {
+    Bucket: s3Origin.bucket,
+    Key: s3Origin.key,
+    Body: JSON.stringify(config, null, 2),
+    ContentType: 'application/json'
+  };
+
+  _s3(s3Origin.region).putObject(params, (err) => {
     if (err) return cb(err);
     cb(null);
   });
-};
+}
 
-const getMacroName = (logGroupName, region, logStreamName) => {
+function _getMacroName(logGroupName, region, logStreamName) {
   return `${logGroupName} \t ${region}${logStreamName? ' \t ' + logStreamName : ''}`;
-};
+}
+
+function _sync (config, cb) {
+  config = config || _loadConfig();
+
+  if (!_hasS3Origin(config)) return console.log(clc.red('missing params in s3Origin; run cwlogs configure command'));
+
+  _loadRemoteConfig(config, (err, remoteConfig) => {
+    if (err && err.code === 'NoSuchKey') {
+      const s3Origin = config.s3Origin;
+      console.log(`Creating ${clc.cyan(s3Origin.key)} in ${clc.cyan(s3Origin.bucket)}`);
+    }
+    else if (err) return cb(err);
+
+    const updatedConfig = Object.assign({}, remoteConfig, config);
+
+    _saveRemoteConfig(updatedConfig, (err) => {
+      if (err) return cb(err);
+      cb(null, updatedConfig);
+    })
+  })
+}
 
 const commands = {
   list: () => {
-    const config = loadConfig();
-    const macros = Object.keys(config.macros);
+    let config = _loadConfig();
 
-    if(!macros.length) return commands.help();
+    if (_hasS3Origin(config)) _loadRemoteConfig(config, (err, remoteConfig) => {
+      if (err) return console.log(clc.red(err));
+      Object.assign(config.macros, remoteConfig.macros);
 
-    const inquirer = require('inquirer');
-    const prompt = inquirer.createPromptModule();
+      const macros = Object.keys(config.macros);
 
-    prompt([
-      {type: 'list', name: 'macroName', message: 'Chose what you want to log:', choices: macros}
-    ]).then(answers => { commands.startLogging(config.macros[answers.macroName]) } );
+      if(!macros.length) return console.log('No macros found in the list');
+
+      const inquirer = require('inquirer');
+      const prompt = inquirer.createPromptModule();
+
+      prompt([
+        {type: 'list', name: 'macroName', message: 'Chose what you want to log:', choices: macros}
+      ]).then(answers => { commands.startLogging(config.macros[answers.macroName]) } );
+    });
   },
 
   help: (command) => {
@@ -96,9 +180,9 @@ const commands = {
       return commands.help('add');
     }
 
-    const macroName = options.macroName || getMacroName(logGroupName, region, logStreamName);
+    const macroName = options.macroName || _getMacroName(logGroupName, region, logStreamName);
 
-    const config = loadConfig();
+    const config = _loadConfig();
     config.macros[macroName] = {
       logGroupName: logGroupName,
       region: region,
@@ -108,9 +192,9 @@ const commands = {
       logFormat: options.logFormat || argv.logformat || argv.f
     };
 
-    saveConfig(config, (err) => {
+    _saveConfig(config, (err, message) => {
       if (err) return console.log(clc.red(err));
-      console.log(`${clc.green('Successfully')} added ${clc.cyan(macroName)}`);
+      console.log(message);
     });
   },
 
@@ -121,9 +205,9 @@ const commands = {
     const region = options.region || argv._[2];
     const logStreamName = options.logStreamName || argv.streamname || argv.n;
 
-    const config = loadConfig();
+    const config = _loadConfig();
 
-    if (logGroupName && region) return deleteAndSave(getMacroName(logGroupName, region, logStreamName));
+    if (logGroupName && region) return deleteAndSave(_getMacroName(logGroupName, region, logStreamName));
 
     const inquirer = require('inquirer');
     const prompt = inquirer.createPromptModule();
@@ -146,9 +230,9 @@ const commands = {
       const macroObj = config.macros[macroName];
       if (!macroObj) return console.log(clc.red(`No macro found with ${macroName} name`));
       delete config.macros[macroName];
-      saveConfig(config, (err) => {
+      _saveConfig(config, (err, message) => {
         if (err) return console.log(clc.red(err));
-        console.log(`${clc.green('Successfully')} removed ${clc.cyan(macroName)}`);
+        console.log(message);
       });
     }
 
@@ -175,7 +259,25 @@ const commands = {
     });
 
     cwlogs.start();
-  }
+  },
+
+  configure: () => {
+    const inquirer = require('inquirer');
+    const prompt = inquirer.createPromptModule();
+    const config = _loadConfig();
+
+    prompt([
+      {type: 'input', name: 'bucket', message: 'S3 bucket name:', default: config.s3Origin.bucket},
+      {type: 'input', name: 'region', message: 'S3 bucket region:', default: config.s3Origin.region},
+      {type: 'input', name: 'key', message: 'Config file key:', default: config.s3Origin.key}
+    ]).then((answers) => {
+      config.s3Origin = answers;
+      _saveConfig(config, true, (err, message) => {
+        if (err) return console.log(clc.red(err));
+        console.log(message);
+      });
+    });
+  },
 };
 
 if (argv.help) return commands.help(process.argv[2]);
