@@ -57,27 +57,27 @@ lambdaLogger.stop();
 ## Global Usage
 If you installed aws-cwlogs globally you can use this commands:
 
-*`cwlogs [logGroupName] [region] [options]` - prints log data from the specified log group to console
-  *`--streamname -n` - logs will be printed from the last stream name found unless specified;
-  *`--timeformat -t` -	momentjs time format;
-  *`--logformat -f` - logs generated from AWS Lambda are more readable if you set this option to "lambda";
-  *`--interval -i` - interval between each log request;
+* `cwlogs [logGroupName] [region] [options]` - prints log data from the specified log group to console
+  * `--streamname -n` - logs will be printed from the last stream name found unless specified;
+  * `--timeformat -t` -	momentjs time format;
+  * `--logformat -f` - logs generated from AWS Lambda are more readable if you set this option to "lambda";
+  * `--interval -i` - interval between each log request;
 
 
-*`cwlogs` - shows a list of previously recorded cwlogs macros and prints data from the selected one to console
+* `cwlogs` - shows a list of previously recorded cwlogs macros and prints data from the selected one to console
 
-*`cwlogs add [logGroupName] [region] [options]` - adds the specified parameters to the macro list
-  *`--streamname -n` - logs will be printed from the last stream name found unless specified;
-  *`--timeformat -t` -	momentjs time format;
-  *`--logformat -f` - logs generated from AWS Lambda are more readable if you set this option to "lambda";
-  *`--interval -i` -	interval between each log request;
+* `cwlogs add [logGroupName] [region] [options]` - adds the specified parameters to the macro list
+  * `--streamname -n` - logs will be printed from the last stream name found unless specified;
+  * `--timeformat -t` -	momentjs time format;
+  * `--logformat -f` - logs generated from AWS Lambda are more readable if you set this option to "lambda";
+  * `--interval -i` -	interval between each log request;
 
-*`cwlogs remove` - removes the selected macro from the list
+* `cwlogs remove` - removes the selected macro from the list
 
-*`cwlogs remove` [logGroupName] [region] [options] - removes the specified macro from the list
-  *`--streamname -n` - logs will be printed from the last stream name found unless specified;
-  *`--timeformat -t` - momentjs time format;
-  *`--logformat -f` - logs generated from AWS Lambda are more readable if you set this option to "lambda";
-  *`--interval -i` - interval between each log request;
+* `cwlogs remove` [logGroupName] [region] [options] - removes the specified macro from the list
+  * `--streamname -n` - logs will be printed from the last stream name found unless specified;
+  * `--timeformat -t` - momentjs time format;
+  * `--logformat -f` - logs generated from AWS Lambda are more readable if you set this option to "lambda";
+  * `--interval -i` - interval between each log request;
 
-*`cwlogs configure` - setup cwlogs to sync your local configurations with a remote config file on AWS S3
+* `cwlogs configure` - setup cwlogs to sync your local configurations with a remote config file on AWS S3
