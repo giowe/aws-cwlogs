@@ -19,28 +19,38 @@ function _hasS3Origin (config) {
   return s3Origin.bucket && s3Origin.region && s3Origin.key;
 }
 
+function _mergeConfig(config, remoteConfig) {
+  const merged = Object.assign({}, config, remoteConfig);
+  Object.assign(merged.macros, config.macros, remoteConfig.macros);
+  return merged;
+}
+
 const _configPath = path.join(__dirname, 'config.json');
-function _loadConfig() {
+function _loadConfig(cb) {
   try {
-    return require(_configPath);
+    const config = require(_configPath);
+    if (!_hasS3Origin(config)) return cb(null, config);
+    _loadRemoteConfig(config, (err, remoteConfig) => {
+      if (err) return cb(err);
+      const mergedConfig = _mergeConfig(config, remoteConfig);
+      _saveConfig(mergedConfig, (err) => {
+        if (err) return cb(err);
+        cb(null, mergedConfig);
+      });
+    });
   } catch(e) {
-    return {
+    cb(null, {
       macros: {},
       s3Origin: {}
-    };
+    });
   }
 }
 
-function _saveConfig (config, dontSync, cb) {
-  if (typeof cb === 'undefined'){
-    cb = dontSync;
-    dontSync = false;
-  }
-
+function _saveConfig (config, cb) {
   fs.writeFile(_configPath, JSON.stringify(config, null, 2), (err) => {
     if (err) return cb(err);
 
-    if (dontSync || !_hasS3Origin(config)) return cb(null, `${clc.green('Successfully')} saved`);
+    if (!_hasS3Origin(config)) return cb(null, `${clc.green('Successfully')} saved`);
 
     _saveRemoteConfig(config, (err) => {
       if (err) return cb(err);
@@ -57,7 +67,10 @@ function _loadRemoteConfig (config, cb) {
     Key: s3Origin.key
   };
   _s3(s3Origin.region).getObject(params, (err, data) => {
-    if (err) return cb (err);
+
+    if (err && err.code === 'NoSuchKey') return cb(null, config);
+    else if (err) return cb(err);
+
     try {
       cb(null, JSON.parse(data.Body));
     } catch (err) {
@@ -86,34 +99,10 @@ function _getMacroName(logGroupName, region, logStreamName) {
   return `${logGroupName} \t ${region}${logStreamName? ' \t ' + logStreamName : ''}`;
 }
 
-function _sync (config, cb) {
-  config = config || _loadConfig();
-
-  if (!_hasS3Origin(config)) return console.log(clc.red('missing params in s3Origin; run cwlogs configure command'));
-
-  _loadRemoteConfig(config, (err, remoteConfig) => {
-    if (err && err.code === 'NoSuchKey') {
-      const s3Origin = config.s3Origin;
-      console.log(`Creating ${clc.cyan(s3Origin.key)} in ${clc.cyan(s3Origin.bucket)}`);
-    }
-    else if (err) return cb(err);
-
-    const updatedConfig = Object.assign({}, remoteConfig, config);
-
-    _saveRemoteConfig(updatedConfig, (err) => {
-      if (err) return cb(err);
-      cb(null, updatedConfig);
-    })
-  })
-}
-
 const commands = {
   list: () => {
-    let config = _loadConfig();
-
-    if (_hasS3Origin(config)) _loadRemoteConfig(config, (err, remoteConfig) => {
+    _loadConfig( (err, config) => {
       if (err) return console.log(clc.red(err));
-      Object.assign(config.macros, remoteConfig.macros);
 
       const macros = Object.keys(config.macros);
 
@@ -159,6 +148,10 @@ const commands = {
         `${clc.cyan('cwlogs remove [logGroupName] [region] [options]')} - ${clc.magenta('remove the specified macro from the list')}`,
         params,
       ].join('\n'),
+
+      configure: [
+        `${clc.cyan('cwlogs configure')} - ${clc.magenta('setup cwlogs to sync config.json with a remote config file on AWS S3')}`,
+      ].join('\n'),
     };
 
     const commandInfo = commands[command];
@@ -182,20 +175,24 @@ const commands = {
 
     const macroName = options.macroName || _getMacroName(logGroupName, region, logStreamName);
 
-    const config = _loadConfig();
-    config.macros[macroName] = {
-      logGroupName: logGroupName,
-      region: region,
-      logStreamName: logStreamName,
-      momentTimeFormat: options.momentTimeFormat || argv.timeformat || argv.t,
-      interval: options.interval || argv.interval || argv.i,
-      logFormat: options.logFormat || argv.logformat || argv.f
-    };
-
-    _saveConfig(config, (err, message) => {
+    _loadConfig((err, config) => {
       if (err) return console.log(clc.red(err));
-      console.log(message);
+
+      config.macros[macroName] = {
+        logGroupName: logGroupName,
+        region: region,
+        logStreamName: logStreamName,
+        momentTimeFormat: options.momentTimeFormat || argv.timeformat || argv.t,
+        interval: options.interval || argv.interval || argv.i,
+        logFormat: options.logFormat || argv.logformat || argv.f
+      };
+
+      _saveConfig(config, (err, message) => {
+        if (err) return console.log(clc.red(err));
+        console.log(message);
+      });
     });
+
   },
 
   remove: (options) => {
@@ -205,37 +202,36 @@ const commands = {
     const region = options.region || argv._[2];
     const logStreamName = options.logStreamName || argv.streamname || argv.n;
 
-    const config = _loadConfig();
+    _loadConfig((err, config) => {
+      if (logGroupName && region) return deleteAndSave(_getMacroName(logGroupName, region, logStreamName));
 
-    if (logGroupName && region) return deleteAndSave(_getMacroName(logGroupName, region, logStreamName));
+      const inquirer = require('inquirer');
+      const prompt = inquirer.createPromptModule();
 
-    const inquirer = require('inquirer');
-    const prompt = inquirer.createPromptModule();
+      const macros = Object.keys(config.macros);
+      if(!macros.length) return console.log('No macros to remove');
 
-    const macros = Object.keys(config.macros);
-    if(!macros.length) return console.log('No macros to remove');
-
-    prompt([
-      {type: 'list', name: 'macroName', message: 'Chose what you want to log:', choices: macros}
-    ]).then(macroNameAnswer => {
-      const macroName = macroNameAnswer.macroName;
       prompt([
-        {type: 'confirm', name: 'confirm', message: `Are you sure to remove ${macroName} macro?`, default: false}
-      ]).then(confirmAnswer => {
-        if (confirmAnswer.confirm) deleteAndSave(macroName);
+        {type: 'list', name: 'macroName', message: 'Chose what you want to log:', choices: macros}
+      ]).then(macroNameAnswer => {
+        const macroName = macroNameAnswer.macroName;
+        prompt([
+          {type: 'confirm', name: 'confirm', message: `Are you sure to remove ${macroName} macro?`, default: false}
+        ]).then(confirmAnswer => {
+          if (confirmAnswer.confirm) deleteAndSave(macroName);
+        });
       });
+
+      function deleteAndSave(macroName) {
+        const macroObj = config.macros[macroName];
+        if (!macroObj) return console.log(clc.red(`No macro found with ${macroName} name`));
+        delete config.macros[macroName];
+        _saveConfig(config, (err, message) => {
+          if (err) return console.log(clc.red(err));
+          console.log(message);
+        });
+      }
     });
-
-    function deleteAndSave(macroName) {
-      const macroObj = config.macros[macroName];
-      if (!macroObj) return console.log(clc.red(`No macro found with ${macroName} name`));
-      delete config.macros[macroName];
-      _saveConfig(config, (err, message) => {
-        if (err) return console.log(clc.red(err));
-        console.log(message);
-      });
-    }
-
   },
 
   startLogging: (options) => {
@@ -264,17 +260,21 @@ const commands = {
   configure: () => {
     const inquirer = require('inquirer');
     const prompt = inquirer.createPromptModule();
-    const config = _loadConfig();
-
-    prompt([
-      {type: 'input', name: 'bucket', message: 'S3 bucket name:', default: config.s3Origin.bucket},
-      {type: 'input', name: 'region', message: 'S3 bucket region:', default: config.s3Origin.region},
-      {type: 'input', name: 'key', message: 'Config file key:', default: config.s3Origin.key}
-    ]).then((answers) => {
-      config.s3Origin = answers;
-      _saveConfig(config, true, (err, message) => {
-        if (err) return console.log(clc.red(err));
-        console.log(message);
+    _loadConfig((err, config) => {
+      prompt([
+        {type: 'input', name: 'bucket', message: 'S3 bucket name:', default: config.s3Origin.bucket},
+        {type: 'input', name: 'region', message: 'S3 bucket region:', default: config.s3Origin.region},
+        {type: 'input', name: 'key', message: 'Config file key:', default: config.s3Origin.key}
+      ]).then((answers) => {
+        config.s3Origin = answers;
+        _loadRemoteConfig(config, (err, remoteConfig) => {
+          if (err) return console.log(err);
+          const mergedConfig = _mergeConfig(config, remoteConfig);
+          _saveConfig(mergedConfig, (err, message) => {
+            if (err) return console.log(clc.red(err));
+            console.log(message);
+          });
+        });
       });
     });
   },
