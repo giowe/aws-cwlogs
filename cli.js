@@ -119,38 +119,38 @@ const commands = {
 
   help: (command) => {
     const params = [
-      '  --streamname\t-n\tif not specified logs will be printed from the last stream name found;',
+      '  --streamname\t-n\tlogs will be printed from the last stream name found unless specified;',
       '  --timeformat\t-t\tmomentjs time format;',
-      '  --interval\t-i\tinterval between every log request;',
-      '  --logformat\t-f\tlogs generated from lambda functions are more readable setting this options to "lambda";'
+      '  --logformat\t-f\tlogs generated from AWS Lambda are more readable if you set this option to "lambda";',
+      '  --interval\t-i\tinterval between each log request;'
     ].join('\n');
 
     const commands = {
       startLogging: [
-        `${clc.cyan('cwlogs [logGroupName] [region] [options]')} - ${clc.magenta('logs data from the specified log group')}`,
+        `${clc.cyan('cwlogs [logGroupName] [region] [options]')} - ${clc.magenta('prints log data from the specified log group to console')}`,
         params
       ].join('\n'),
 
       list: [
-        `${clc.cyan('cwlogs')} - ${clc.magenta('show a list of previously recorded cwlogs macros and logs data from the selected one')}`,
+        `${clc.cyan('cwlogs')} - ${clc.magenta('shows a list of previously recorded cwlogs macros and prints data from the selected one to console')}`,
       ].join('\n'),
 
       add: [
-        `${clc.cyan('cwlogs add [logGroupName] [region] [options]')} - ${clc.magenta('add the specified parameters to the macro list')}`,
+        `${clc.cyan('cwlogs add [logGroupName] [region] [options]')} - ${clc.magenta('adds the specified parameters to the macro list')}`,
         params,
       ].join('\n'),
 
       removeList: [
-        `${clc.cyan('cwlogs remove')} - ${clc.magenta('remove the selected macro from the list')}`,
+        `${clc.cyan('cwlogs remove')} - ${clc.magenta('removes the selected macro from the list')}`,
       ].join('\n'),
 
       remove: [
-        `${clc.cyan('cwlogs remove [logGroupName] [region] [options]')} - ${clc.magenta('remove the specified macro from the list')}`,
+        `${clc.cyan('cwlogs remove [logGroupName] [region] [options]')} - ${clc.magenta('removes the specified macro from the list')}`,
         params,
       ].join('\n'),
 
       configure: [
-        `${clc.cyan('cwlogs configure')} - ${clc.magenta('setup cwlogs to sync config.json with a remote config file on AWS S3')}`,
+        `${clc.cyan('cwlogs configure')} - ${clc.magenta('setup cwlogs to sync your local configurations with a remote config file on AWS S3')}`,
       ].join('\n'),
     };
 
@@ -212,7 +212,7 @@ const commands = {
       if(!macros.length) return console.log('No macros to remove');
 
       prompt([
-        {type: 'list', name: 'macroName', message: 'Chose what you want to log:', choices: macros}
+        {type: 'list', name: 'macroName', message: 'Choose what you want to log:', choices: macros}
       ]).then(macroNameAnswer => {
         const macroName = macroNameAnswer.macroName;
         prompt([

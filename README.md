@@ -7,7 +7,7 @@
 	<a href="https://www.youtube.com/watch?v=Sagg08DrO5U"><img src='http://img.shields.io/badge/gandalf-approved-61C6FF.svg'></a>
 </div>
 
-This module pulls the latest events from a specified log group in AWS CloudWatch Logs and prints the output to your terminal. The module keeps pulling logs while its running.
+This module pulls the latest events from a specified log group in AWS CloudWatch Logs and prints the output to console. The module keeps pulling logs while its running.
 
 ## Installation
 You can install aws-cwlog both locally
@@ -21,7 +21,7 @@ npm install aws-cwlogs -g
 ```
 
 ## Configuration
-To use the aws-cwlogs it's important that you have properly installed the [aws-cli](http://docs.aws.amazon.com/cli/latest/userguide/installing.html) and
+To use aws-cwlogs it's important that you have properly installed the [aws-cli](http://docs.aws.amazon.com/cli/latest/userguide/installing.html) and
 configured it with your credentials.
 
 ## Local Usage
@@ -47,20 +47,37 @@ lambdaLogger.stop();
 ```
 
 ## Options
-* `logGroupName`: **required** the name of AWS CloudWatch Logs log group;
-* `region`: **required** the AWS region of the log group;
-* `momentTimeFormat`: [moment.js](http://momentjs.com/docs/#/displaying/format/) time format for every log timestamp;
-* `logFormat`: while watching logs generated from AWS Lambda the output is more readable if this options is set to "lambda"; You can also pass a `function(timestamp, message, event))` if you want to customize the format of your logs.
-* `interval`: the interval between every log request to AWS CloudWatch Logs;
-* `streamname`: if not specified logs will be printed from the last stream name found;
+* `logGroupName`: **required** name of AWS CloudWatch Logs log group;
+* `region`: **required** AWS region of the log group;
+* `streamname`: logs will be printed from the last stream name found unless specified;
+* `momentTimeFormat`: [moment.js](http://momentjs.com/docs/#/displaying/format/) log timestamp format;
+* `logFormat`: logs generated from AWS Lambda are more readable if you set this option to "lambda"; You can also pass a `function(timestamp, message, event))` if you want to customize the format of your logs.
+* `interval`: interval between every log request to AWS CloudWatch Logs in milliseconds (keep it at 2000 ms or greater);
 
 ## Global Usage
-If you installed aws-cwlogs globally you can execute cwlogs command on your terminal following this syntax:
-```
-cwlogs [logGroupName] [region] [options]
-```
-*Options*:
-* `--timeformat -t`
-* `--interval   -i`
-* `--logformat  -f`
-* `--streamname -n`
+If you installed aws-cwlogs globally you can use this commands:
+
+*`cwlogs [logGroupName] [region] [options]` - prints log data from the specified log group to console
+  *`--streamname -n` - logs will be printed from the last stream name found unless specified;
+  *`--timeformat -t` -	momentjs time format;
+  *`--logformat -f` - logs generated from AWS Lambda are more readable if you set this option to "lambda";
+  *`--interval -i` - interval between each log request;
+
+
+*`cwlogs` - shows a list of previously recorded cwlogs macros and prints data from the selected one to console
+
+*`cwlogs add [logGroupName] [region] [options]` - adds the specified parameters to the macro list
+  *`--streamname -n` - logs will be printed from the last stream name found unless specified;
+  *`--timeformat -t` -	momentjs time format;
+  *`--logformat -f` - logs generated from AWS Lambda are more readable if you set this option to "lambda";
+  *`--interval -i` -	interval between each log request;
+
+*`cwlogs remove` - removes the selected macro from the list
+
+*`cwlogs remove` [logGroupName] [region] [options] - removes the specified macro from the list
+  *`--streamname -n` - logs will be printed from the last stream name found unless specified;
+  *`--timeformat -t` - momentjs time format;
+  *`--logformat -f` - logs generated from AWS Lambda are more readable if you set this option to "lambda";
+  *`--interval -i` - interval between each log request;
+
+*`cwlogs configure` - setup cwlogs to sync your local configurations with a remote config file on AWS S3
