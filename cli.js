@@ -161,6 +161,57 @@ const commands = {
     Object.keys(commands).forEach( key => console.log(commands[key], '\n') );
   },
 
+  addList: (options) => {
+    //todo gestire region
+    const region = 'eu-west-1';
+    const cloudwatchlogs = new AWS.CloudWatchLogs( {region: region} );
+    const params = {
+     // logGroupNamePrefix: 'STRING_VALUE',
+     // nextToken: 'STRING_VALUE'
+    };
+    cloudwatchlogs.describeLogGroups(params, (err, data) => {
+      if (err) return console.log(clc.red(err));
+
+      const logGroupNames = [];
+      data.logGroups.forEach( logGroup => logGroupNames.push(logGroup.logGroupName) );
+
+      if (logGroupNames.length === 0) return console.log(clc.red(`No log groups found on AWS ClodWatch Logs in ${region} region`));
+
+      const inquirer = require('inquirer');
+      const prompt = inquirer.createPromptModule();
+      prompt([{
+        type: 'list', name: 'logGroup', message: 'Chose a log group:', choices: logGroupNames
+      }]).then( answer => {
+        const logGroup = answer.logGroup;
+        const params = {
+          logGroupName: logGroup,
+          descending: true
+          //orderBy: 'LastEventTime'
+        };
+
+        cloudwatchlogs.describeLogStreams(params, (err, data) => {
+          if (err) return console.log(clc.red(err));
+          const logStreamNames = ['-latest-'];
+          data.logStreams.forEach( logStream => logStreamNames.push(logStream.logStreamName) );
+
+          if (logStreamNames.length === 1) return console.log(clc.red(`No log streams found in ${logGroup}`));
+
+          prompt([{
+            type: 'list', name: 'logStram', message: 'Chose a log stream:', choices: logStreamNames
+          }]).then( answer => {
+
+          });
+        });
+      })
+    });
+
+    /*const params = {
+      logGroupName: options.logGroupName || argv._[1],
+      descending: true,
+      orderBy: 'LastEventTime'
+    };*/
+  },
+
   add: (options) => {
     options = options || {};
 
@@ -169,8 +220,9 @@ const commands = {
     const logStreamName = options.logStreamName || argv.streamname || argv.n;
 
     if (!logGroupName || !region) {
-      console.log(clc.red('missing params'), '\n');
-      return commands.help('add');
+      return commands.addList();
+      /*console.log(clc.red('missing params'), '\n');
+      return commands.help('add');*/
     }
 
     const macroName = options.macroName || _getMacroName(logGroupName, region, logStreamName);
