@@ -99,10 +99,62 @@ function _getMacroName(logGroupName, region, logStreamName) {
   return `${logGroupName} \t ${region}${logStreamName? ' \t ' + logStreamName : ''}`;
 }
 
+function _getLogGroup(region, cb) {
+  const cloudwatchlogs = new AWS.CloudWatchLogs( {region: region} );
+
+  cloudwatchlogs.describeLogGroups({}, (err, data) => {
+    if (err) return console.log(clc.red('Error:\n'), err);
+
+    const logGroupNames = [];
+    data.logGroups.forEach( logGroup => logGroupNames.push(logGroup.logGroupName) );
+
+    if (logGroupNames.length === 0) return cb(`No log groups found on AWS ClodWatch Logs in ${region} region`);
+
+    const inquirer = require('inquirer');
+    const prompt = inquirer.createPromptModule();
+    prompt([{
+      type: 'list', name: 'logGroup', message: 'Chose a log group:', choices: logGroupNames
+    }]).then( answer => {
+      const logGroup = answer.logGroup;
+      const params = {
+        logGroupName: logGroup,
+        descending: true,
+        orderBy: 'LastEventTime'
+      };
+
+      cloudwatchlogs.describeLogStreams(params, (err, data) => {
+        if (err) return cb(err);
+        const latestLabel = '-latest-';
+        const logStreamNames = [latestLabel];
+        data.logStreams.forEach( logStream => logStreamNames.push(logStream.logStreamName) );
+
+        if (logStreamNames.length === 1) return console.log(clc.red(`No log streams found in ${logGroup}`));
+
+        prompt([{
+          type: 'list', name: 'logStram', message: 'Chose a log stream:', choices: logStreamNames
+        }]).then( answer => {
+          const logStream = answer.logStram;
+          cb(null, {
+            region: region,
+            logGroup: logGroup,
+            logStream: logStream === latestLabel? null : logStream
+          });
+        });
+      });
+    })
+  });
+
+  /*const params = {
+   logGroupName: options.logGroupName || argv._[1],
+   descending: true,
+   orderBy: 'LastEventTime'
+   };*/
+}
+
 const commands = {
   list: () => {
     _loadConfig( (err, config) => {
-      if (err) return console.log(clc.red(err));
+      if (err) return console.log(clc.red('Error:\n'), err);
 
       const macros = Object.keys(config.macros);
 
@@ -161,55 +213,13 @@ const commands = {
     Object.keys(commands).forEach( key => console.log(commands[key], '\n') );
   },
 
-  addList: (options) => {
-    //todo gestire region
-    const region = 'eu-west-1';
-    const cloudwatchlogs = new AWS.CloudWatchLogs( {region: region} );
-    const params = {
-     // logGroupNamePrefix: 'STRING_VALUE',
-     // nextToken: 'STRING_VALUE'
-    };
-    cloudwatchlogs.describeLogGroups(params, (err, data) => {
-      if (err) return console.log(clc.red(err));
-
-      const logGroupNames = [];
-      data.logGroups.forEach( logGroup => logGroupNames.push(logGroup.logGroupName) );
-
-      if (logGroupNames.length === 0) return console.log(clc.red(`No log groups found on AWS ClodWatch Logs in ${region} region`));
-
-      const inquirer = require('inquirer');
-      const prompt = inquirer.createPromptModule();
-      prompt([{
-        type: 'list', name: 'logGroup', message: 'Chose a log group:', choices: logGroupNames
-      }]).then( answer => {
-        const logGroup = answer.logGroup;
-        const params = {
-          logGroupName: logGroup,
-          descending: true
-          //orderBy: 'LastEventTime'
-        };
-
-        cloudwatchlogs.describeLogStreams(params, (err, data) => {
-          if (err) return console.log(clc.red(err));
-          const logStreamNames = ['-latest-'];
-          data.logStreams.forEach( logStream => logStreamNames.push(logStream.logStreamName) );
-
-          if (logStreamNames.length === 1) return console.log(clc.red(`No log streams found in ${logGroup}`));
-
-          prompt([{
-            type: 'list', name: 'logStram', message: 'Chose a log stream:', choices: logStreamNames
-          }]).then( answer => {
-
-          });
-        });
-      })
-    });
-
-    /*const params = {
-      logGroupName: options.logGroupName || argv._[1],
-      descending: true,
-      orderBy: 'LastEventTime'
-    };*/
+  addList: () => {
+    //todo region from aws cli or param --region
+    const defaultRegion = 'eu-west-1';
+    _getLogGroup(argv.region || argv.r || defaultRegion, (err, logGroup) => {
+      if (err) return console.log(clc.red('Error:\n'), err);
+      console.log(logGroup);
+    })
   },
 
   add: (options) => {
@@ -228,7 +238,7 @@ const commands = {
     const macroName = options.macroName || _getMacroName(logGroupName, region, logStreamName);
 
     _loadConfig((err, config) => {
-      if (err) return console.log(clc.red(err));
+      if (err) return console.log(clc.red('Error:\n'), err);
 
       config.macros[macroName] = {
         logGroupName: logGroupName,
@@ -240,7 +250,7 @@ const commands = {
       };
 
       _saveConfig(config, (err, message) => {
-        if (err) return console.log(clc.red(err));
+        if (err) return console.log(clc.red('Error:\n'), err);
         console.log(message);
       });
     });
@@ -279,7 +289,7 @@ const commands = {
         if (!macroObj) return console.log(clc.red(`No macro found with ${macroName} name`));
         delete config.macros[macroName];
         _saveConfig(config, (err, message) => {
-          if (err) return console.log(clc.red(err));
+          if (err) return console.log(clc.red('Error:\n'), err);
           console.log(message);
         });
       }
@@ -293,7 +303,7 @@ const commands = {
     const region = options.region || argv._[1];
 
     if (!logGroupName || !region) {
-      console.log(clc.red('missing params)'), '\n');
+      console.log(clc.red('missing params'), '\n');
       return commands.help('startLogging');
     }
 
@@ -323,7 +333,7 @@ const commands = {
           if (err) return console.log(err);
           const mergedConfig = _mergeConfig(config, remoteConfig);
           _saveConfig(mergedConfig, (err, message) => {
-            if (err) return console.log(clc.red(err));
+            if (err) return console.log(clc.red('Error:\n'), err);
             console.log(message);
           });
         });
