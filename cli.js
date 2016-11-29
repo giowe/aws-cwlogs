@@ -113,11 +113,11 @@ function _getLogGroup(region, cb) {
     const inquirer = require('inquirer');
     const prompt = inquirer.createPromptModule();
     prompt([{
-      type: 'list', name: 'logGroup', message: 'Chose a log group:', choices: logGroupNames
+      type: 'list', name: 'logGroupName', message: 'Chose a log group:', choices: logGroupNames
     }]).then( answer => {
-      const logGroup = answer.logGroup;
+      const logGroupName = answer.logGroupName;
       const params = {
-        logGroupName: logGroup,
+        logGroupName: logGroupName,
         descending: true,
         orderBy: 'LastEventTime'
       };
@@ -128,27 +128,28 @@ function _getLogGroup(region, cb) {
         const logStreamNames = [latestLabel];
         data.logStreams.forEach( logStream => logStreamNames.push(logStream.logStreamName) );
 
-        if (logStreamNames.length === 1) return console.log(clc.red(`No log streams found in ${logGroup}`));
+        if (logStreamNames.length === 1) return console.log(clc.red(`No log streams found in ${logGroupName}`));
 
-        prompt([{
-          type: 'list', name: 'logStram', message: 'Chose a log stream:', choices: logStreamNames
-        }]).then( answer => {
-          const logStream = answer.logStram;
+        prompt([
+          { type: 'list', name: 'logStreamName', message: 'Chose a log stream:', choices: logStreamNames },
+          { type: 'input', name: 'momentTimeFormat', message: 'Time format:', default: 'hh:mm:ss:SSS' },
+          { type: 'input', name: 'logFormat', message: 'Logs format:', default: 'default' },
+          { type: 'input', name: 'interval', message: 'Logs pooling interval (keep it at 2000 ms or greater):', default: 2000 }
+
+        ]).then( answers => {
+          const logStreamName = answers.logStreamName;
           cb(null, {
+            logGroupName: logGroupName,
             region: region,
-            logGroup: logGroup,
-            logStream: logStream === latestLabel? null : logStream
+            logStreamName: logStreamName === latestLabel? null : logStreamName,
+            momentTimeFormat: answers.momentTimeFormat,
+            interval: answers.interval,
+            logFormat: answers.logFormat
           });
         });
       });
     })
   });
-
-  /*const params = {
-   logGroupName: options.logGroupName || argv._[1],
-   descending: true,
-   orderBy: 'LastEventTime'
-   };*/
 }
 
 const commands = {
@@ -174,7 +175,7 @@ const commands = {
       '  --streamname\t-n\tlogs will be printed from the last stream name found unless specified;',
       '  --timeformat\t-t\tmomentjs time format;',
       '  --logformat\t-f\tlogs generated from AWS Lambda are more readable if you set this option to "lambda";',
-      '  --interval\t-i\tinterval between each log request;'
+      '  --interval\t-i\tinterval between each log request (keep it at 2000 ms or greater);'
     ].join('\n');
 
     const commands = {

@@ -44,7 +44,7 @@ module.exports = class CwLogs {
           if (!events.length) return;
 
           let logFunction = (message, timestamp) => console.log(timestamp, message);
-          if (this.options.logFormat) {
+          if (this.options.logFormat && this.options.logFormat !== 'default') {
             try {
               logFunction = require(path.join(__dirname, 'log-formats', `${this.options.logFormat}.js`));
             } catch(err) {}
