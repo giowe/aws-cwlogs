@@ -99,7 +99,7 @@ function _getMacroName(logGroupName, region, logStreamName) {
   return `${logGroupName} \t ${region}${logStreamName? ' \t ' + logStreamName : ''}`;
 }
 
-function _getLogGroup(region, cb) {
+function _getLogGroups(region, cb) {
   const cloudwatchlogs = new AWS.CloudWatchLogs( {region: region} );
 
   cloudwatchlogs.describeLogGroups({}, (err, data) => {
@@ -152,9 +152,37 @@ function _getLogGroup(region, cb) {
   });
 }
 
+function _startLogging (options) {
+  options = options || {};
+
+  const logGroupName =  options.logGroupName || argv._[0];
+  const region = options.region || argv._[1];
+
+  if (!logGroupName || !region) {
+    console.log(clc.red('missing params'), '\n');
+    return commands.help('startLogging');
+  }
+
+  const cwlogs = new CwLogs({
+    logGroupName: logGroupName,
+    region: region,
+    logStreamName: options.logStreamName || argv.streamname || argv.n,
+    momentTimeFormat: options.momentTimeFormat || argv.timeformat || argv.t || 'hh:mm:ss:SSS',
+    interval: options.interval || argv.interval || argv.i || 2000,
+    logFormat: options.logFormat || argv.logformat || argv.f || 'standard'
+  });
+
+  cwlogs.start();
+}
+
 const commands = {
   list: () => {
-    _loadConfig( (err, config) => {
+    const defaultRegion = 'eu-west-1';
+    _getLogGroups(argv.region || argv.r || defaultRegion, (err, options) => {
+      if (err) return console.log(clc.red('Error:\n'), err);
+      _startLogging(options);
+    });
+    /*_loadConfig( (err, config) => {
       if (err) return console.log(clc.red('Error:\n'), err);
 
       const macros = Object.keys(config.macros);
@@ -166,8 +194,8 @@ const commands = {
 
       prompt([
         {type: 'list', name: 'macroName', message: 'Chose what you want to log:', choices: macros}
-      ]).then(answers => { commands.startLogging(config.macros[answers.macroName]) } );
-    });
+      ]).then(answers => { _startLogging(config.macros[answers.macroName]) } );
+    });*/
   },
 
   help: (command) => {
@@ -217,13 +245,13 @@ const commands = {
   addList: () => {
     //todo region from aws cli or param --region
     const defaultRegion = 'eu-west-1';
-    _getLogGroup(argv.region || argv.r || defaultRegion, (err, logGroup) => {
+    _getLogGroups(argv.region || argv.r || defaultRegion, (err, logGroup) => {
       if (err) return console.log(clc.red('Error:\n'), err);
       console.log(logGroup);
     })
   },
 
-  add: (options) => {
+  /*add: (options) => {
     options = options || {};
 
     const logGroupName =  options.logGroupName || argv._[1];
@@ -232,8 +260,8 @@ const commands = {
 
     if (!logGroupName || !region) {
       return commands.addList();
-      /*console.log(clc.red('missing params'), '\n');
-      return commands.help('add');*/
+      //console.log(clc.red('missing params'), '\n');
+      //return commands.help('add');
     }
 
     const macroName = options.macroName || _getMacroName(logGroupName, region, logStreamName);
@@ -256,9 +284,9 @@ const commands = {
       });
     });
 
-  },
+  },*/
 
-  remove: (options) => {
+  /*remove: (options) => {
     options = options || {};
 
     const logGroupName =  options.logGroupName || argv._[1];
@@ -295,30 +323,7 @@ const commands = {
         });
       }
     });
-  },
-
-  startLogging: (options) => {
-    options = options || {};
-
-    const logGroupName =  options.logGroupName || argv._[0];
-    const region = options.region || argv._[1];
-
-    if (!logGroupName || !region) {
-      console.log(clc.red('missing params'), '\n');
-      return commands.help('startLogging');
-    }
-
-    const cwlogs = new CwLogs({
-      logGroupName: logGroupName,
-      region: region,
-      logStreamName: options.logStreamName || argv.streamname || argv.n,
-      momentTimeFormat: options.momentTimeFormat || argv.timeformat || argv.t || 'hh:mm:ss:SSS',
-      interval: options.interval || argv.interval || argv.i || 2000,
-      logFormat: options.logFormat || argv.logformat || argv.f || 'standard'
-    });
-
-    cwlogs.start();
-  },
+  },*/
 
   configure: () => {
     const inquirer = require('inquirer');
@@ -354,4 +359,4 @@ if (!argv._[0]) return commands.list();
 const command = commands[argv._[0]];
 if (command) return command();
 
-commands.startLogging();
+_startLogging();
