@@ -168,7 +168,7 @@ const commands = {
 
     const commands = {
       list: [
-        `${clc.cyan('cwlogs (logGroupName) (logStreamName) (options)')} - ${clc.magenta('prints log data from the specified log group and log stream to console; all params are optionals and if not set a list of all available options will be printed;')}`,
+        `${clc.cyan('cwlogs (logGroupName) (logStreamName) (options)')} - ${clc.magenta('prints log data from the specified log group and log stream to console; all params are optional and if not set a list of all available options will be printed;')}`,
         params
       ].join('\n'),
 
