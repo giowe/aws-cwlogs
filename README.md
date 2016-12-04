@@ -30,12 +30,12 @@ If you installed aws-cwlogs locally you can simply use it like shown in the exam
   const CwLogs = require('aws-cwlogs');
 
   const options = {
-    logGroupName: '/aws/lambda/test-lambda',
     region: 'eu-west-1',
+    logGroupName: '/aws/lambda/test-lambda',
+    streamname: 'production'          //optional
     momentTimeFormat: 'hh:mm:ss:SSS', //optional
     logFormat: 'lambda',              //optional
     interval: 2000,                   //optional
-    streamname: 'production'          //optional
   };
 
   const lambdaLogger = new CwLogs(options);
@@ -47,8 +47,8 @@ lambdaLogger.stop();
 ```
 
 ## Options
-* `logGroupName`: **required** name of AWS CloudWatch Logs log group;
 * `region`: **required** AWS region of the log group;
+* `logGroupName`: **required** name of AWS CloudWatch Logs log group;
 * `streamname`: logs will be printed from the last stream name found unless specified;
 * `momentTimeFormat`: [moment.js](http://momentjs.com/docs/#/displaying/format/) log timestamp format;
 * `logFormat`: logs generated from AWS Lambda are more readable if you set this option to "lambda"; You can also pass a `function(timestamp, message, event))` if you want to customize the format of your logs.
@@ -57,27 +57,10 @@ lambdaLogger.stop();
 ## Global Usage
 If you installed aws-cwlogs globally you can use this commands:
 
-* `cwlogs [logGroupName] [region] [options]` - prints log data from the specified log group to console
-  * `--streamname -n` - logs will be printed from the last stream name found unless specified;
+* `(logGroupName) (logStreamName) (options)` - prints log data from the specified log group and log stream to console; all params are optionals and if not set a list of all available options will be printed;
+  * `--region -r` - Cloud Watch Logs region;
   * `--timeformat -t` -	momentjs time format;
   * `--logformat -f` - logs generated from AWS Lambda are more readable if you set this option to "lambda";
   * `--interval -i` - interval between each log request;
 
-
-* `cwlogs` - shows a list of previously recorded cwlogs macros and prints data from the selected one to console
-
-* `cwlogs add [logGroupName] [region] [options]` - adds the specified parameters to the macro list
-  * `--streamname -n` - logs will be printed from the last stream name found unless specified;
-  * `--timeformat -t` -	momentjs time format;
-  * `--logformat -f` - logs generated from AWS Lambda are more readable if you set this option to "lambda";
-  * `--interval -i` -	interval between each log request;
-
-* `cwlogs remove` - removes the selected macro from the list
-
-* `cwlogs remove [logGroupName] [region] [options]` - removes the specified macro from the list
-  * `--streamname -n` - logs will be printed from the last stream name found unless specified;
-  * `--timeformat -t` - momentjs time format;
-  * `--logformat -f` - logs generated from AWS Lambda are more readable if you set this option to "lambda";
-  * `--interval -i` - interval between each log request;
-
-* `cwlogs configure` - setup cwlogs to sync your local configurations with a remote config file on AWS S3
+* `cwlogs configure` - setup cwlogs default settings such us region, timeformat, logformat and interval;

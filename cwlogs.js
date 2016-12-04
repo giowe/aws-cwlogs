@@ -31,7 +31,10 @@ module.exports = class CwLogs {
       };
 
       cloudwatchlogs.describeLogStreams(params, (err, data) => {
-        if (err) return console.log(clc.red(err));
+        if (err) {
+          console.log(clc.red(err));
+          return this.stop();
+        }
         const params = {
           logGroupName: this.options.logGroupName,
           logStreamName: this.options.logStreamName || data.logStreams[0].logStreamName,
@@ -39,7 +42,10 @@ module.exports = class CwLogs {
         };
 
         cloudwatchlogs.getLogEvents(params, (err, data) => {
-          if (err) return console.log(clc.red(err));
+          if (err) {
+            console.log(clc.red(err));
+            return this.stop();
+          }
           const events = data.events;
           if (!events.length) return;
 
@@ -65,6 +71,6 @@ module.exports = class CwLogs {
   }
 
   stop(){
-    clearInterval(_interval);
+    clearInterval(this.interval);
   }
 };
