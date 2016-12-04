@@ -57,7 +57,7 @@ lambdaLogger.stop();
 ## Global Usage
 If you installed aws-cwlogs globally you can use this commands:
 
-* `(logGroupName) (logStreamName) (options)` - prints log data from the specified log group and log stream to console; all params are optionals and if not set a list of all available options will be printed;
+* `(logGroupName) (logStreamName) (options)` - prints log data from the specified log group and log stream to console; all params are optional and if not set a list of all available options will be printed;
   * `--region -r` - Cloud Watch Logs region;
   * `--timeformat -t` -	momentjs time format;
   * `--logformat -f` - logs generated from AWS Lambda are more readable if you set this option to "lambda";
