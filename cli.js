@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/data/data/com.termux/files/usr/bin/env node
 'use strict';
 
 const argv    = require('yargs').argv;
@@ -8,9 +8,11 @@ const path     = require('path');
 const fs       = require('fs');
 const AWS      = require('aws-sdk');
 const inquirer = require('inquirer');
+const homeDir  = require('homedir')();
 
 const _latestLabel = 'latest';
 
+const _configPath = path.join(homeDir, '.cwlogs-config.json');
 function _saveConfig (config) {
   try {
     fs.writeFileSync(_configPath, JSON.stringify(config, null, 2));
@@ -22,7 +24,6 @@ function _saveConfig (config) {
 }
 
 //Load config
-const _configPath = path.join(__dirname, 'config.json');
 let config;
 try {
   config = require(_configPath);
