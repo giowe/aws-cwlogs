@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/env node
+#!env node
 'use strict';
 
 const argv    = require('yargs').argv;
