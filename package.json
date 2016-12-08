@@ -1,6 +1,6 @@
 {
   "name": "aws-cwlogs",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "This module pulls the latest events from a specified log group in AWS CloudWatch Logs and prints the output to console. The module keeps pulling logs while its running.",
   "main": "cwlogs.js",
   "bin": {
@@ -31,7 +31,7 @@
     "aws-sdk": "^2.6.12",
     "cli-color": "^1.1.0",
     "homedir": "^0.6.0",
-    "inquirer": "^1.2.3",
+    "inquirer": "^2.0.0",
     "moment": "^2.15.2",
     "yargs": "^6.3.0"
   }
