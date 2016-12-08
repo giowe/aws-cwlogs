@@ -1,7 +1,7 @@
-#!env node
+#!/usr/bin/env node
 'use strict';
 
-const argv    = require('yargs').argv;
+const argv     = require('yargs').argv;
 const CwLogs   = require('./cwlogs');
 const clc      = require('cli-color');
 const path     = require('path');
