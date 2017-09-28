@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 'use strict';
-if (!process.argv[1].includes('cwlogs')) process.exit();
+
 const argv     = require('yargs').argv;
 const CwLogs   = require('./cwlogs');
 const clc      = require('cli-color');
