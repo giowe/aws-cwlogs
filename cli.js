@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 'use strict';
 
 const argv     = require('yargs').argv;
@@ -39,7 +40,7 @@ try {
 let _cloudwatchlogs;
 function _getCloudWatchLogs(region) {
   if (_cloudwatchlogs) return _cloudwatchlogs;
-  return new AWS.CloudWatchLogs({region: region});
+  return new AWS.CloudWatchLogs({ region });
 }
 
 function _getLocalPackageName() {
@@ -61,9 +62,8 @@ function _getSimilar(name, list){
 
 function _getLogGroups(options, cb) {
   const logGroupName = options.logGroupName;
-  const logStreamName = options.logStreamName;
   const region = options.region = options.region || config.region;
-  options.momentTimeFormat = options.momentTimeFormat || config.momentTimeFormat
+  options.momentTimeFormat = options.momentTimeFormat || config.momentTimeFormat;
   options.interval = options.interval || config.interval;
   options.logFormat = options.logFormat || config.logFormat;
 
@@ -72,7 +72,7 @@ function _getLogGroups(options, cb) {
     if (err) return console.log(clc.red('Error:\n'), err);
 
     const logGroupNames = [];
-    data.logGroups.forEach( logGroup => logGroupNames.push(logGroup.logGroupName) );
+    data.logGroups.forEach(logGroup => logGroupNames.push(logGroup.logGroupName));
 
     //No log groups found
     if (logGroupNames.length === 0) return cb(`No log groups found on AWS ClodWatch Logs in ${region} region`);
@@ -86,7 +86,7 @@ function _getLogGroups(options, cb) {
       const prompt = inquirer.createPromptModule();
       prompt([
         { type: 'list', name: 'logGroupName', message: 'Chose a log group:', choices: logGroupNames, default: _getSimilar(logGroupName, logGroupNames) || _getLocalPackageName() }
-      ]).then( answer => {
+      ]).then(answer => {
         options.logGroupName = answer.logGroupName;
         return _getLogStreams(options, next);
       });
@@ -104,7 +104,7 @@ function _getLogStreams(options, cb) {
   const logStreamName = options.logStreamName;
   const cloudwatchlogs = _getCloudWatchLogs(options.region);
   const params = {
-    logGroupName: logGroupName,
+    logGroupName,
     descending: true,
     orderBy: 'LastEventTime'
   };
@@ -113,7 +113,7 @@ function _getLogStreams(options, cb) {
     if (err) return cb(err);
 
     const logStreamNames = [_latestLabel];
-    data.logStreams.forEach( logStream => logStreamNames.push(logStream.logStreamName) );
+    data.logStreams.forEach(logStream => logStreamNames.push(logStream.logStreamName));
 
     //No log streams found
     if (logStreamNames.length === 1) return console.log(clc.red(`No log streams found in ${logGroupName}`));
@@ -125,12 +125,11 @@ function _getLogStreams(options, cb) {
     //Log stream wasn't specified or it doesn't exists so show the list
     else {
       const prompt = inquirer.createPromptModule();
-      prompt([
-        { type: 'list', name: 'logStreamName', message: 'Chose a log stream:', choices: logStreamNames, default: _getSimilar(logStreamName, logStreamNames)}
-      ]).then( answers => {
+      prompt([{ type: 'list', name: 'logStreamName', message: 'Chose a log stream:', choices: logStreamNames, default: _getSimilar(logStreamName, logStreamNames) }]).then(answers => {
         options.logStreamName = answers.logStreamName;
         return cb(null, options);
-      });
+      })
+        .catch(console.log);
     }
   });
 }
@@ -147,7 +146,7 @@ const commands = {
       logGroupName: argv._[0],
       logStreamName: argv._[1],
       region: argv.region || argv.r,
-      momentTimeFormat:  argv.timeformat || argv.t ,
+      momentTimeFormat:  argv.timeformat || argv.t,
       interval: argv.interval || argv.i,
       logFormat: argv.logformat || argv.f
     };
@@ -173,41 +172,42 @@ const commands = {
       ].join('\n'),
 
       configure: [
-        `${clc.cyan('cwlogs configure')} - ${clc.magenta('setup cwlogs default settings such us region, timeformat, logformat and interval;')}`,
-      ].join('\n'),
+        `${clc.cyan('cwlogs configure')} - ${clc.magenta('setup cwlogs default settings such us region, timeformat, logformat and interval;')}`
+      ].join('\n')
     };
 
     const commandInfo = commands[command];
     if (commandInfo) return console.log(commandInfo);
 
     console.log('cwlogs commands:\n');
-    Object.keys(commands).forEach( key => console.log(commands[key], '\n') );
+    Object.keys(commands).forEach(key => console.log(commands[key], '\n'));
   },
 
   configure: () => {
     const prompt = inquirer.createPromptModule();
     console.log('Configure default params:');
     prompt([
-      {type: 'input', name: 'region', message: 'Region:', default: config.region},
-      {type: 'input', name: 'momentTimeFormat', message: 'MomentJs time format:', default: config.momentTimeFormat},
-      {type: 'input', name: 'logFormat', message: 'Log format template', default: config.logFormat},
-      {type: 'input', name: 'interval', message: 'Interval between each log request (keep it at 2000 ms or greater):', default: config.interval},
-
+      { type: 'input', name: 'region', message: 'Region:', default: config.region },
+      { type: 'input', name: 'momentTimeFormat', message: 'MomentJs time format:', default: config.momentTimeFormat },
+      { type: 'input', name: 'logFormat', message: 'Log format template', default: config.logFormat },
+      { type: 'input', name: 'interval', message: 'Interval between each log request (keep it at 2000 ms or greater):', default: config.interval }
     ]).then((answers) => {
       Object.assign(config, answers);
-      if ( _saveConfig(config) ) console.log(`${clc.green('Successfully')} saved configurations` )
-    });
+      if (_saveConfig(config)) console.log(`${clc.green('Successfully')} saved configurations`);
+    })
+      .catch(console.log);
   }
 };
 
-if (argv.help) return commands.help(process.argv[2]);
-
-if (argv.version || argv.v) {
-  const pkg = require(path.join(__dirname, 'package.json'));
-  return console.log(pkg.name, pkg.version);
+if (argv.help) {
+  commands.help(process.argv[2]);
 }
-
-const command = commands[argv._[0]];
-if (command) return command();
-
-commands.list();
+else if (argv.version || argv.v) {
+  const pkg = require(path.join(__dirname, 'package.json'));
+  console.log(pkg.name, pkg.version);
+}
+else {
+  const command = commands[argv._[0]];
+  if (command) command();
+  else commands.list();
+}

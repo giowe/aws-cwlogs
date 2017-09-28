@@ -2,7 +2,7 @@
 
 const clc    = require('cli-color');
 
-module.exports = (message, timestamp, event) => {
+module.exports = (message, timestamp) => {
   const splittedMessage = message.split('\t');
   const header = splittedMessage.shift().split(' ');
   const body = splittedMessage.join(' ').slice(0, -1);
@@ -39,9 +39,10 @@ module.exports = (message, timestamp, event) => {
         timestamp,
         ' '
         ,
-        body
+        body.split('\n').map((row, i) => i > 0 ? `│ ${row}` : row).join('\n')
       ];
   }
 
+// eslint-disable-next-line no-console
   console.log(out.join(''));
 };

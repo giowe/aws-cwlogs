@@ -12,7 +12,10 @@
   "rules": {
     "comma-dangle": ["warn", "never"],
     "comma-spacing": ["error", { "before": false, "after": true }],
-    "indent": ["error", 2, { "MemberExpression": 1 }],
+    "indent": ["error", 2, {
+      "MemberExpression": 1,
+      "SwitchCase": 1
+    }],
     "no-empty": ["error", { "allowEmptyCatch": true }],
     "no-multiple-empty-lines": ["error"],
     "no-new-symbol": "error",
