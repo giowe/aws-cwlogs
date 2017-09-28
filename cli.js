@@ -1,14 +1,14 @@
 /* eslint-disable no-console */
 'use strict';
 
-const argv     = require('yargs').argv;
-const CwLogs   = require('./cwlogs');
-const clc      = require('cli-color');
-const path     = require('path');
-const fs       = require('fs');
-const AWS      = require('aws-sdk');
+const argv = require('./argv');
+const CwLogs = require('./cwlogs');
+const clc = require('cli-color');
+const path = require('path');
+const fs = require('fs');
+const AWS = require('aws-sdk');
 const inquirer = require('inquirer');
-const homeDir  = require('homedir')();
+const homeDir = require('homedir')();
 
 const _latestLabel = 'latest';
 

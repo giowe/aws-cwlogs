@@ -1,10 +1,10 @@
 /* eslint-disable no-console */
 'use strict';
 
-const AWS    = require('aws-sdk');
-const clc    = require('cli-color');
+const AWS = require('aws-sdk');
+const clc = require('cli-color');
 const moment = require('moment');
-const path   = require('path');
+const path = require('path');
 
 module.exports = class CwLogs {
   constructor(options) {
@@ -13,7 +13,8 @@ module.exports = class CwLogs {
       region: '',
       momentTimeFormat: 'hh:mm:ss:SSS',
       interval: 2000,
-      logFormat: 'standard'
+      logFormat: 'standard',
+      credentials: null
     }, options);
 
     this.lastLogTime = 0;
@@ -21,7 +22,7 @@ module.exports = class CwLogs {
   }
 
   start(){
-    const cloudwatchlogs = new AWS.CloudWatchLogs({ region: this.options.region });
+    const cloudwatchlogs = new AWS.CloudWatchLogs(Object.assign({ region: this.options.region }, { credentials: this.options.credentials }));
     this.interval = setInterval(() => {
       const params = {
         logGroupName: this.options.logGroupName,

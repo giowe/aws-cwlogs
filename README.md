@@ -32,10 +32,14 @@ If you installed aws-cwlogs locally you can simply use it like shown in the exam
   const options = {
     region: 'eu-west-1',
     logGroupName: '/aws/lambda/test-lambda',
-    streamname: 'production',         //optional
-    momentTimeFormat: 'hh:mm:ss:SSS', //optional
-    logFormat: 'lambda',              //optional
-    interval: 2000                    //optional
+    streamname: 'production',                //optional
+    momentTimeFormat: 'hh:mm:ss:SSS',        //optional
+    logFormat: 'lambda',                     //optional
+    interval: 2000                           //optional
+    credentials: new AWS.Credentials({       //optional
+      accessKeyId: 'xxx',
+      secretAccessKey: 'xxx'
+    })
   };
 
   const lambdaLogger = new CwLogs(options);
