@@ -32,14 +32,14 @@ If you installed aws-cwlogs locally you can simply use it like shown in the exam
   const options = {
     region: 'eu-west-1',
     logGroupName: '/aws/lambda/test-lambda',
-    streamname: 'production'          //optional
+    streamname: 'production',         //optional
     momentTimeFormat: 'hh:mm:ss:SSS', //optional
     logFormat: 'lambda',              //optional
-    interval: 2000,                   //optional
+    interval: 2000                    //optional
   };
 
   const lambdaLogger = new CwLogs(options);
-  lambdaLogger.start(options);
+  lambdaLogger.start();
 ```
 If you want to stop aws-cwlogs from pulling the new data from the specified log group you can simply use the stop command:
 ```
