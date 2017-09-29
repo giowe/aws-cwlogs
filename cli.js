@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 'use strict';
 
-const argv = require('./argv');
+const argv = require('simple-argv');
 const CwLogs = require('./cwlogs');
 const clc = require('cli-color');
 const path = require('path');
