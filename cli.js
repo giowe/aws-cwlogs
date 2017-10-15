@@ -60,6 +60,15 @@ function _getSimilar(name, list){
   return null;
 }
 
+function _getAllLogGroups(cloudwatchlogs, cb, nextToken, out = []) {
+  cloudwatchlogs.describeLogGroups({ nextToken }, (err, data) => {
+    if (err) return cb(err);
+    const { nextToken, logGroups } = data;
+    if (nextToken) _getAllLogGroups(cloudwatchlogs, cb, nextToken, [...logGroups, ...out]);
+    else cb(null, [...logGroups, ...out]);
+  });
+}
+
 function _getLogGroups(options, cb) {
   const logGroupName = options.logGroupName;
   const region = options.region = options.region || config.region;
@@ -68,11 +77,11 @@ function _getLogGroups(options, cb) {
   options.logFormat = options.logFormat || config.logFormat;
 
   const cloudwatchlogs = _getCloudWatchLogs(region);
-  cloudwatchlogs.describeLogGroups({}, (err, data) => {
+  _getAllLogGroups(cloudwatchlogs, (err, data) => {
     if (err) return console.log(clc.red('Error:\n'), err);
 
     const logGroupNames = [];
-    data.logGroups.forEach(logGroup => logGroupNames.push(logGroup.logGroupName));
+    data.sort((a, b) => a.logGroupName.toLowerCase() > b.logGroupName.toLowerCase() ? +1 : -1).forEach(logGroup => logGroupNames.push(logGroup.logGroupName));
 
     //No log groups found
     if (logGroupNames.length === 0) return cb(`No log groups found on AWS ClodWatch Logs in ${region} region`);
